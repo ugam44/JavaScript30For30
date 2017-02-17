@@ -63,11 +63,12 @@
     </style>
 
     <script>
-        var inputs = document.querySelectorAll(".controls input");
         function updateVariables() {
             var units = this.getAttribute("data-sizing") || "";
             document.documentElement.style.setProperty("--" + this.name, this.value + units);
         }
+        
+        var inputs = document.querySelectorAll(".controls input");
         for (let i=0; i < inputs.length; i++) {
             inputs[i].addEventListener("input", updateVariables);
         }
