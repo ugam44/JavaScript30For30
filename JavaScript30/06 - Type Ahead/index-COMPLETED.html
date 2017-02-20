@@ -40,12 +40,7 @@
                     if (propertyValue instanceof Array) {
                         return propertyValue.includes(filterValue);
                     }
-                    else {
-                        return false;
-                    }
-                }
-                case "function": {
-                    return false;
+                    // else fall through to default
                 }
                 default: {
                     return propertyValue === filterValue;
@@ -64,22 +59,63 @@
             return html;
         }
         
+        function handleAnds (andArray, citiesArr) {
+            var lastAnd = andArray.pop().trim();
+            var matches = [];
+            if (~lastAnd.indexOf(",")){
+                matches = handleOrs(lastAnd.split(","), citiesArr);
+            }
+            else {
+                matches = citiesArr.filter(function (city) {
+                    return (
+                        (checkObjectPropertyValue(city, "city", lastAnd) ||
+                          checkObjectPropertyValue(city, "state", lastAnd))
+                    );
+                });
+            }
+            
+            if (andArray.length) {
+                var extras = handleAnds(andArray, citiesArr);
+                matches = matches.filter(function (elem) {
+                  return ~extras.indexOf(elem);
+                });
+                return matches; 
+            }
+            else {
+                return matches;
+            }
+        }
+        
+        function handleOrs (orArray, citiesArr) {
+            var lastOr = orArray.pop().trim();
+            var matches = citiesArr.filter(function (city) {
+                return (
+                    (checkObjectPropertyValue(city, "city", lastOr) ||
+                      checkObjectPropertyValue(city, "state", lastOr))
+                );
+            });
+            if (orArray.length > 0) {
+                return matches.concat(handleOrs(orArray, citiesArr)); 
+            }
+            else {
+                return matches;
+            }
+        }
+        
         function getMatches (citiesArr, strToMatch) {
             var matches = [];
             if (strToMatch !== "") {
-                var parenRegex = /\([^\)]*\)?/g;
-                var parentheses = strToMatch.match(parenRegex) || [];
-                console.log(parentheses);
-                parentheses.forEach(function (str) {
-                    str = str.replace(/[\(\)]/g, "");
-                    // add code to handle , and +
-                    //"(colo, spr, ngs, den)".replace(/[\(\)]/g, "").split(/\,/g)
-                    matches.push(citiesArr.filter(function (city) {
-                        return (checkObjectPropertyValue(city, "city", str) ||
-                            checkObjectPropertyValue(city, "state", str));
-                    }));
-                });
-                
+//                var parenRegex = /\([^\)]*\)?/g;
+//                var parentheses = strToMatch.match(parenRegex) || [];
+                if (~strToMatch.indexOf("+")) {
+                    matches = handleAnds(strToMatch.split("+"), citiesArr);
+                }
+                else if (~strToMatch.indexOf(",")) {
+                    matches = handleOrs(strToMatch.split(","), citiesArr);
+                }
+                else {
+                    matches = handleOrs([strToMatch], citiesArr);
+                }
             }
             return matches;
         }
