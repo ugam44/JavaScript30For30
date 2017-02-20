@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Type Ahead 👀</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <form class="search-form">
+        <input type="text" class="search" placeholder="City or State">
+        <ul class="suggestions">
+          <li>Filter for a city</li>
+          <li>or a state</li>
+        </ul>
+    </form>
+    <script>
+        const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+        var cities = [];
+        var resultsList = document.querySelector(".suggestions");
+        
+        fetch(endpoint).then(function successCallback (response) {
+            response.json().then(function (data) {
+                cities.push(...data);
+            });
+        }, function failureCallback () {
+            alert("There was an error fetching the data!");
+        });
+        
+        function checkObjectPropertyValue(obj, filterProperty, filterValue, caseSensitive) {
+            var propertyValue = obj[filterProperty];
+            if (!caseSensitive) {
+                filterValue = filterValue.toLowerCase();
+                if (typeof propertyValue === "string") { propertyValue = propertyValue.toLowerCase(); }
+            }
+            switch(typeof propertyValue) {
+                case "string": {
+                    return propertyValue.includes(filterValue);
+                }
+                case "object": {
+                    if (propertyValue instanceof Array) {
+                        return propertyValue.includes(filterValue);
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case "function": {
+                    return false;
+                }
+                default: {
+                    return propertyValue === filterValue;
+                }
+            }
+            return propertyValue;
+        }
+        
+        function getMatchingHTML (arr) {
+            var html = arr.map(function (city) {
+              return "<li>" + city.city + ", " + city.state + "</li>";
+            }).join("");
+            if (html === "") {
+              html = "<li>No Matches Found!</li>";
+            }
+            return html;
+        }
+        
+        function getMatches (citiesArr, strToMatch) {
+            var matches = [];
+            if (strToMatch !== "") {
+                var parenRegex = /\([^\)]*\)?/g;
+                var parentheses = strToMatch.match(parenRegex) || [];
+                console.log(parentheses);
+                parentheses.forEach(function (str) {
+                    str = str.replace(/[\(\)]/g, "");
+                    // add code to handle , and +
+                    //"(colo, spr, ngs, den)".replace(/[\(\)]/g, "").split(/\,/g)
+                    matches.push(citiesArr.filter(function (city) {
+                        return (checkObjectPropertyValue(city, "city", str) ||
+                            checkObjectPropertyValue(city, "state", str));
+                    }));
+                });
+                
+            }
+            return matches;
+        }
+        
+        var searchBox = document.querySelector("form .search");
+        searchBox.addEventListener("input", function () {
+            var html = "<li>Filter For A City</li><li>Or A State</li>";
+            if (this.value !== "") {
+                html = getMatchingHTML(getMatches(cities, this.value));
+            }
+            resultsList.innerHTML = html;
+        });
+    </script>
+</body>
+</html>
